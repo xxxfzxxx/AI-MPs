@@ -1,0 +1,58 @@
+frontier = [] # open list A, B , D
+    explored = [] # closed list
+    frontier.append(maze.start) # put the starting node on the open list
+    current_g_score = 0
+    while frontier:
+        frontier.sort()
+        current = frontier.pop(0) # f = g + h\
+        neighbors = maze.neighbors(current[0],current[1]) # a list of 4 successors
+        current_g_score += 1
+        print("current_g_score: ", current_g_score)
+        for neighbor in neighbors:
+            if maze.navigable(neighbor[0], neighbor[1]):
+                neighbor_g_score = current_g_score + 1
+                print("neighbor_g_score: ", neighbor_g_score)
+                man_distance = abs(neighbor[0] - maze.waypoints[0][0]) + abs(neighbor[1] - maze.waypoints[0][1])
+                neighbor_A_star_score = neighbor_g_score + man_distance #TODO
+                current_A_star_score = current_g_score + man_distance  #TODO
+                if neighbor in maze.waypoints:
+                    return explored
+                if neighbor in frontier and current_A_star_score < neighbor_A_star_score:
+                    continue
+                if neighbor in explored and current_A_star_score < neighbor_A_star_score:
+                    continue
+                else:
+                    frontier.append(neighbor)
+        explored.append(current)
+    return None
+
+
+
+    start = maze.start
+    goal = maze.waypoints[0]
+
+    frontier = PriorityQueue()
+    frontier.put(start, 0)
+    came_from = {}
+    g = {}
+    came_from[start] = start
+    g[start] = 0
+    while frontier:
+        current = frontier.get()
+        if current == goal:
+            reconst_path = []
+            while came_from[current] != current:
+                reconst_path.append(current)
+                current = came_from[current]
+            reconst_path.append(start)
+            reconst_path.reverse()
+            return reconst_path
+        for next in maze.neighbors(current[0],current[1]):
+            new_cost = g[current] + 1
+            if next not in g or new_cost < g[next]:
+                g[next] = new_cost
+                priority = new_cost + heuristic(goal, next)
+                frontier.put(next, priority)
+                came_from[next] = current
+
+    return g
