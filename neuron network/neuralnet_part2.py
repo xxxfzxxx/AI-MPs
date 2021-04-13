@@ -36,7 +36,24 @@ class NeuralNet(nn.Module):
         """
         super(NeuralNet, self).__init__()
         self.loss_fn = loss_fn
-        raise NotImplementedError("You need to write this part!")
+        self.lrate = lrate
+        self.in_size = in_size
+        self.out_size = out_size
+        self.conv_model = nn.Sequential(
+            nn.Conv2d(3, 32, 4),
+            nn.ReLU(),
+            nn.MaxPool2d(4),
+        )
+        self.linear_model = nn.Sequential(
+            nn.Linear(1568, 32),
+            nn.ReLU(),
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.Linear(16, out_size)
+        )
+        
+        self.optimizer = optim.Adagrad(self.parameters(), lr=lrate, weight_decay = 0.001)
+
 
 
     def forward(self, x):
@@ -45,8 +62,11 @@ class NeuralNet(nn.Module):
         @param x: an (N, in_size) Tensor
         @return y: an (N, out_size) Tensor of output from the network
         """
-        raise NotImplementedError("You need to write this part!")
-        return torch.ones(x.shape[0], 1)
+        x = (x - torch.mean(x)) / torch.std(x)
+        x = x.view(-1, 3, 32, 32)
+        x = self.conv_model(x)
+        x = x.view(-1, 1568)
+        return self.linear_model(x)
 
     def step(self, x,y):
         """
@@ -56,8 +76,14 @@ class NeuralNet(nn.Module):
         @param y: an (N,) Tensor
         @return L: total empirical risk (mean of losses) at this timestep as a float
         """
-        raise NotImplementedError("You need to write this part!")
-        return 0.0
+        y_hat = self.forward(x)
+        loss_value = self.loss_fn(y_hat, y)
+        L = loss_value.item()
+
+        self.optimizer.zero_grad()
+        loss_value.backward()
+        self.optimizer.step()
+        return L
 
 def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     """ Make NeuralNet object 'net' and use net.step() to train a neural net
@@ -79,5 +105,16 @@ def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     @return yhats: an (M,) NumPy array of binary labels for dev_set
     @return net: a NeuralNet object
     """
-    raise NotImplementedError("You need to write this part!")
-    return [],[],None
+    loss_fn = nn.CrossEntropyLoss()
+    net = NeuralNet(0.01, loss_fn, train_set.shape[1], 2)
+    losses = []
+    for i in range(n_iter):
+        # get batch data
+        batch = np.random.permutation(train_set.shape[0])
+        x = train_set[batch[:batch_size]]
+        y = train_labels[batch[:batch_size]]
+        loss = net.step(x, y)
+        losses.append(loss)
+    yhats = torch.argmax(net.forward(dev_set), 1).numpy()
+
+    return losses, yhats, net

@@ -99,6 +99,9 @@ def naiveBayes(train_set, train_labels, dev_set, smoothing_parameter, pos_prior)
     print("spam_dict_len: ", spam_dict_len)
     print("ham_dict_len: ", ham_dict_len)
     #using log to calculate the bayes, compare the value
+    
+    
+    
     for doc in dev_set:
         y_ham = math.log(pos_prior_ham)
         y_spam = math.log(pos_prior_spam)

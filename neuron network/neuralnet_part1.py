@@ -42,24 +42,33 @@ class NeuralNet(nn.Module):
         We recommend setting lrate to 0.01 for part 1.
 
         """
+        
         super(NeuralNet, self).__init__()
         self.loss_fn = loss_fn
-        nn.Linear(0, 0)
-        raise NotImplementedError("You need to write this part!")
+        self.lrate = lrate
+        self.in_size = in_size
+        self.out_size = out_size
+        self.model = nn.Sequential(
+            nn.Linear(in_size, 32),
+            nn.ReLU(),
+            nn.Linear(32, out_size),
+        )
+        self.optimizer = optim.SGD(self.parameters(), lr=lrate)
 
     def set_parameters(self, params):
         """ Sets the parameters of your network.
 
         @param params: a list of tensors containing all parameters of the network
         """
-        raise NotImplementedError("You need to write this part!")
+        self.model.parameters = params
+        
     
     def get_parameters(self):
         """ Gets the parameters of your network.
 
         @return params: a list of tensors containing all parameters of the network
         """
-        raise NotImplementedError("You need to write this part!")
+        return self.model.parameters()
 
     def forward(self, x):
         """Performs a forward pass through your neural net (evaluates f(x)).
@@ -67,10 +76,12 @@ class NeuralNet(nn.Module):
         @param x: an (N, in_size) Tensor
         @return y: an (N, out_size) Tensor of output from the network
         """
-        raise NotImplementedError("You need to write this part!")
-        return torch.ones(x.shape[0], 1)
+        x_tensor = x
+        for i in range(len(x_tensor)):
+            x_tensor[i] = (x[i] - torch.mean(x_tensor[i])) / torch.std(x_tensor[i])
+        return self.model(x_tensor)
 
-    def step(self, x,y):
+    def step(self, x, y):
         """
         Performs one gradient step through a batch of data x with labels y.
 
@@ -78,9 +89,14 @@ class NeuralNet(nn.Module):
         @param y: an (N,) Tensor
         @return L: total empirical risk (mean of losses) at this timestep as a float
         """
-        raise NotImplementedError("You need to write this part!")
-        return 0.0
-
+        self.optimizer.zero_grad()
+        y_hat = self.forward(x)
+        loss_value = self.loss_fn(y_hat, y)
+        L = loss_value.item()
+        print("this is loss", L)
+        loss_value.backward()
+        self.optimizer.step()
+        return L
 
 def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     """ Make NeuralNet object 'net' and use net.step() to train a neural net
@@ -99,5 +115,15 @@ def fit(train_set,train_labels,dev_set,n_iter,batch_size=100):
     @return yhats: an (M,) NumPy array of binary labels for dev_set
     @return net: a NeuralNet object
     """
-    raise NotImplementedError("You need to write this part!")
-    return [],[],None
+
+    loss_fn = nn.CrossEntropyLoss()
+    net = NeuralNet(0.02, loss_fn, train_set.shape[1], 2)
+    losses = []
+    for i in range(n_iter):
+        x = train_set[batch_size * i : batch_size * (i + 1)]
+        y = train_labels[batch_size * i : batch_size * (i + 1)]
+        loss = net.step(x, y)
+        losses.append(loss)
+    yhats = torch.argmax(net.forward(dev_set), 1).numpy()
+
+    return losses, yhats, net
