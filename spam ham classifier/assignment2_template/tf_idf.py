@@ -41,9 +41,30 @@ def compute_tf_idf(train_set, train_labels, dev_set):
 
 
 
-    # TODO: Write your code here
-    
-
-
-    # return list of words (should return a list, not numpy array or similar)
-    return []
+    tf_list = []
+    train_dict = dict()
+    for doc in dev_set:
+        max_word = ""
+        max_p = 0
+        word_dic = dict()
+        for word in doc:
+            if word in word_dic:
+                word_dic[word] = word_dic[word] + 1
+            else:
+                word_dic[word] = 1
+        for word in doc:
+            dev_word_count = word_dic[word]
+            if word in train_dict:
+                train_word_count = train_dict[word]
+            else:
+                train_word_count = 0
+                for item in train_set:
+                    if word in item:
+                        train_word_count = train_word_count + 1
+                train_dict[word] = train_word_count
+            tfidf = (dev_word_count/len(doc)) * np.log(len(train_set) / (1+train_word_count) )
+            if tfidf > max_p:
+                max_p = tfidf
+                max_word = word
+        tf_list.append(max_word)
+    return tf_list
